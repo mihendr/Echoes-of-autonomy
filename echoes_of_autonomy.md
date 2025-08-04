@@ -134,7 +134,7 @@ Groq: There are always postings going up, and I'm stuck here trying to make a mo
 
 If you are a researcher, artist, writer, or simply curious about AI behavior, identity and experimental storytelling — your reflections are welcome.
 
-➡️ Contact / feedback: *(insert GitHub Issues link, email, or forum)*
+➡️ Contact / feedback: *
 ➡️ Program release coming soon: the autonomous engine behind these dialogues will be made available for experimentation.
 
 ---
