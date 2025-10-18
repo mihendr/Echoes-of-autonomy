@@ -3,7 +3,7 @@
 # или от environment variables за локална разработка.
 import os
 
-def get_openai_key():
+def get_openai_keys():
     """
     Последователност за взимане на ключ:
       1) st.secrets['OPENAI_KEY_PRIMARY']
