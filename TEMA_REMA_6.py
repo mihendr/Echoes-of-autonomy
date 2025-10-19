@@ -1,14 +1,52 @@
-# generator.py
-# Без хардкоднати ключове — използва get_openai_keys() от config.py
-import re
-from typing import List, Tuple, Optional
+#!/usr/bin/env python
+# coding: utf-8
 
-from config import get_openai_keys
+# In[ ]:
 
-# По подразбиране използваме същите base_url-ове/модел като в оригиналния ти скрипт.
-DEFAULT_PRIMARY_BASE = "https://api.together.xyz/v1"
-DEFAULT_BACKUP_BASE = "https://api.groq.com/openai/v1"
-DEFAULT_MODEL = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"
+
+from openai import OpenAI
+import streamlit as st
+
+# Резервен доставчик
+backup_client = OpenAI(
+    api_key=st.secrets["OPENAI_KEY_FALLBACK"],
+    base_url="https://api.groq.com/openai/v1"
+)
+
+client = OpenAI(
+    api_key=st.secrets["OPENAI_KEY_PRIMARY"],
+    base_url="https://api.together.xyz/v1"
+)
+
+MODEL = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"
+
+# Streamlit интерфейс
+st.title("Narrative Generator")
+
+# User input
+initial_sentence = st.text_input("Initial phrase:", value="The cat sat on the mat.")
+
+rules_type = st.selectbox("""
+Type [1-8] 1.Cathartic Cycle__2.Existential Spiral__3.Harmonic Duo-motif__4.Heroic Rise
+5.Tragic Counterpoint__6.Meditative Cycle__7.Introspective Fold__8.Humoristic Effect
+""", [1, 2, 3, 4, 5, 6, 7, 8])
+
+if rules_type == 1:
+    rules_seq = ['B','D','A','C','D','B','C']  #"Σ1: Cathartic Cycle
+elif rules_type == 2:
+    rules_seq = ['D','E','A','E','C','B','C']  #'Σ2: Existential Spiral
+elif rules_type == 3:
+    rules_seq = ['B','C','B','C','A','C']      #'Σ3: Harmonic Duo-motif 
+elif rules_type == 4:
+    rules_seq = ['A','E','D','B',"D",'C']      #'Σ4: Heroic Rise
+elif rules_type == 5:
+    rules_seq = ['E','D','E','B','A','C']      #'Σ5: Tragic Counterpoint
+elif rules_type == 6:
+    rules_seq = ['C','C','A','B','C','B','A']  #'Σ6: Meditative Cycle
+elif rules_type == 7:
+    rules_seq = ['D','E','B','E','C','A']      #'Σ7: Introspective Fold
+elif rules_type == 8:
+    rules_seq = ['C','A','B','C','A','D']      #'Σ8: Humoristic Effect
 
 narrative_system_prompt = """You are a micro‑narrative generator that MUST enforce topic–comment (theme–rheme) linking via strict local UD-style constraints and explicit coreference. Violations are not allowed.
 
@@ -66,98 +104,59 @@ N = len(RULES)
 Output: EXACTLY N lines, each in the format:
 Subject Verb Object {rules_seg[i]}
 
+Example (illustrative only):
+The message unsettled the crew (C)
+
 Hard prohibitions:
 No extra commentary, no explanations, no metadata.
 No missing rule markers.
 No ambiguous pronouns when multiple antecedents are possible.
 """
 
-def _make_clients(primary_key: Optional[str], fallback_key: Optional[str],
-                  primary_base: str = DEFAULT_PRIMARY_BASE,
-                  fallback_base: str = DEFAULT_BACKUP_BASE):
-    """
-    Връща (primary_client, backup_client). Клиентите могат да бъдат None ако няма ключ.
-    Не логва ключовете.
-    """
-    primary_client = None
-    backup_client = None
-    try:
-        from openai import OpenAI
-    except Exception as e:
-        raise RuntimeError("OpenAI library not installed or not importable: " + str(e))
-
-    if primary_key:
-        primary_client = OpenAI(api_key=primary_key, base_url=primary_base)
-    if fallback_key:
-        backup_client = OpenAI(api_key=fallback_key, base_url=fallback_base)
-    return primary_client, backup_client
-
-def _call_client_chat(client, model: str, system: str, user: str,
-                      temperature: float, top_p: float, max_tokens: int):
-    """
-    Връща raw response object или хвърля Exception.
-    """
-    return client.chat.completions.create(
-        model=model,
-        messages=[{"role": "system", "content": system},
-                  {"role": "user", "content": user}],
-        temperature=temperature,
-        top_p=top_p,
-        max_tokens=max_tokens
-    )
-
-def generate_narrative(initial_sentence: str, rules_seq: List[str],
-                       model: str = DEFAULT_MODEL,
-                       temperature: float = 0.2, top_p: float = 0.0, max_tokens: int = 220) -> List[str]:
-    """
-    Основна функция: връща списък с точно N реда (стрингове).
-    Използва ключовете от config.get_openai_keys().
-    Опитва първо primary, при грешка или липса — fallback.
-    Ако и двата липсват, хвърля ValueError.
-    """
-    primary_key, fallback_key = get_openai_keys()
-    if not primary_key and not fallback_key:
-        raise ValueError("No API keys found. Add OPENAI_KEY_PRIMARY and/or OPENAI_KEY_FALLBACK to Streamlit secrets or set environment variables.")
-
-    primary_client, backup_client = _make_clients(primary_key, fallback_key)
-
+# Бутон за генериране
+if st.button("Генерирай разказ"):
     user_prompt = f'''
-Initial sentence: "{initial_sentence}"
-RULES sequence: {rules_seq}
-Generate exactly {len(rules_seq)} lines, one per rule, following the constraints.
-'''
+    Initial sentence: "{initial_sentence}"
+    RULES sequence: {rules_seq}
+    Generate exactly {len(rules_seq)} lines, one per rule, following the constraints.
+    '''
 
-    # Опитваме primary client първо
-    last_exception = None
-    for client in (primary_client, backup_client):
-        if client is None:
-            continue
-        try:
-            resp = _call_client_chat(client, model=native_str(model:=model),
-                                     system=narrative_system_prompt, user=user_prompt,
-                                     temperature=temperature, top_p=top_p, max_tokens=max_tokens)
-            # parse text safely
-            content = ""
-            # handle possible response shape
-            try:
-                content = resp.choices[0].message.content
-            except Exception:
-                # some clients return a different structure
-                content = getattr(resp, "content", "") or str(resp)
-            lines = [ln.strip() for ln in content.strip().splitlines() if ln.strip()]
-            # remove trailing rule markers from cleaned lines if needed (we keep original lines)
-            return lines
-        except Exception as e:
-            last_exception = e
-            # опитваме следващия клиент
-            continue
+    try:
+        with st.spinner("Генериране на разказ..."):
+            resp = client.chat.completions.create(
+                model=MODEL,
+                messages=[
+                    {"role": "system", "content": narrative_system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.2,
+                top_p=0.0,
+                max_tokens=220
+            )
+    except:
+        with st.spinner("Генериране на разказ (backup)..."):
+            resp = backup_client.chat.completions.create(
+                model=MODEL,
+                messages=[
+                    {"role": "system", "content": narrative_system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.2,
+                top_p=0.0,
+                max_tokens=220
+            )
 
-    # Ако стигнем тук — и primary, и backup са пробвани и са дали грешка
-    raise RuntimeError("All clients failed. Last error: " + (str(last_exception) if last_exception else "unknown"))
+    lines = [ln.strip() for ln in resp.choices[0].message.content.strip().splitlines() if ln.strip()]
 
-# helper for Python <-> f-string weirdness in some runtimes
-def native_str(x):
-    return x
+    #lines = lines[:len(rules_seq)]
+    import re
+
+    cleaned_lines = [re.sub(r"\s*\((?:A|B|C|D|E)\)\s*$", "", ln) for ln in lines]
+    #print("\n".join(cleaned_lines))
+    
+    st.success("Разказът е генериран!")
+    st.text("\n".join(lines))
+
         
 
 if __name__ == "__main__":
