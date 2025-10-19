@@ -24,7 +24,7 @@ MODEL = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"
 st.title("Narrative Generator")
 
 # User input
-initial_sentence = st.text_input("Initial phrase:", value="The cat sat on the mat.")
+initial_sentence = st.text_input("Initial phrase:", value="")
 
 rules_type = st.selectbox("""
 Type [1-8] 1.Cathartic Cycle__2.Existential Spiral__3.Harmonic Duo-motif__4.Heroic Rise
@@ -114,7 +114,7 @@ No ambiguous pronouns when multiple antecedents are possible.
 """
 
 # Бутон за генериране
-if st.button("Генерирай разказ"):
+if st.button("Generate"):
     user_prompt = f'''
     Initial sentence: "{initial_sentence}"
     RULES sequence: {rules_seq}
@@ -154,7 +154,7 @@ if st.button("Генерирай разказ"):
     cleaned_lines = [re.sub(r"\s*\((?:A|B|C|D|E)\)\s*$", "", ln) for ln in lines]
     #print("\n".join(cleaned_lines))
     
-    st.success("Разказът е генериран!")
+    #st.success("Разказът е генериран!")
     st.text("\n".join(lines))
 
         
