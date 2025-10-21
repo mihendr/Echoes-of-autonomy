@@ -4,7 +4,6 @@
 from openai import OpenAI
 import streamlit as st
 
-# Резервен доставчик
 backup_client = OpenAI(
     api_key=st.secrets["OPENAI_KEY_FALLBACK"],
     base_url="https://api.groq.com/openai/v1"
@@ -17,33 +16,31 @@ client = OpenAI(
 
 MODEL = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"
 
-# Streamlit интерфейс
 st.title("Narrative Generator")
 
-# User input
 initial_sentence = st.text_input("Initial phrase:", value="")
 
-rules_type = st.selectbox("""
-Type [1-8] 1.Cathartic Cycle__2.Existential Spiral__3.Harmonic Duo-motif__4.Heroic Rise
-5.Tragic Counterpoint__6.Meditative Cycle__7.Introspective Fold__8.Humoristic Effect
-""", [1, 2, 3, 4, 5, 6, 7, 8])
+rules_type_raw = st.text_input("Въведи число от 1 до 8:")
+rules_seq = None
 
-if rules_type == 1:
-    rules_seq = ['B','D','A','C','D','B','C']
-elif rules_type == 2:
-    rules_seq = ['D','E','A','E','C','B','C']
-elif rules_type == 3:
-    rules_seq = ['B','C','B','C','A','C']
-elif rules_type == 4:
-    rules_seq = ['A','E','D','B',"D",'C']
-elif rules_type == 5:
-    rules_seq = ['E','D','E','B','A','C']
-elif rules_type == 6:
-    rules_seq = ['C','C','A','B','C','B','A']
-elif rules_type == 7:
-    rules_seq = ['D','E','B','E','C','A']
-elif rules_type == 8:
-    rules_seq = ['C','A','B','C','A','D']
+if rules_type_raw:
+    try:
+        rules_type = int(rules_type_raw)
+        if rules_type not in range(1, 9):
+            st.error("❌ Невалидно число. Моля въведи стойност от 1 до 8.")
+        else:
+            rules_seq = {
+                1: ['B','D','A','C','D','B','C'],
+                2: ['D','E','A','E','C','B','C'],
+                3: ['B','C','B','C','A','C'],
+                4: ['A','E','D','B',"D",'C'],
+                5: ['E','D','E','B','A','C'],
+                6: ['C','C','A','B','C','B','A'],
+                7: ['D','E','B','E','C','A'],
+                8: ['C','A','B','C','A','D']
+            }[rules_type]
+    except ValueError:
+        st.error("❌ Моля въведи цяло число между 1 и 8.")
 
 narrative_system_prompt = """You are a micro‑narrative generator that MUST enforce topic–comment (theme–rheme) linking via strict local UD-style constraints and explicit coreference. Violations are not allowed.
 
@@ -110,8 +107,7 @@ No missing rule markers.
 No ambiguous pronouns when multiple antecedents are possible.
 """
 
-# Бутон за генериране
-if st.button("Generate"):
+if st.button("Generate") and rules_seq:
     user_prompt = f'''
     Initial sentence: "{initial_sentence}"
     RULES sequence: {rules_seq}
@@ -146,36 +142,22 @@ if st.button("Generate"):
     lines = [ln.strip() for ln in resp.choices[0].message.content.strip().splitlines() if ln.strip()]
     import re
     cleaned_lines = [re.sub(r"\s*\((?:A|B|C|D|E)\)\s*$", "", ln) for ln in lines]
-    st.text("\n".join(lines))
+    st.session_state["narrative"] = "\n".join(lines)
 
-# 🎵 Бутон за музика (поставен след "Generate")
-if st.button("Music"):
+if "narrative" in st.session_state:
+    st.text(st.session_state["narrative"])
+
+if st.button("Music") and rules_seq:
     audio_path = f"audio/S{rules_type}_full_instruments.mp3"
     try:
-        with open(audio_path, "rb") as f:
-            st.audio(f.read(), format="audio/mp3")
+        st.markdown(
+            f"""
+            <audio autoplay>
+                <source src="{audio_path}" type="audio/mp3">
+            </audio>
+            """,
+            unsafe_allow_html=True
+        )
     except Exception:
         st.warning(f"Audio file not found at {audio_path}. Make sure the file exists.")
 
-if __name__ == "__main__":
-    try:
-        initial = input("Initial phrase: ")
-        rules_type = int(input("Choose rules type [1-8]: "))
-        mapping = {
-            1: ['B','D','A','C','D','B','C'],
-            2: ['D','E','A','E','C','B','C'],
-            3: ['B','C','B','C','A','C'],
-            4: ['A','E','D','B','D','C'],
-            5: ['E','D','E','B','A','C'],
-            6: ['C','C','A','B','C','B','A'],
-            7: ['D','E','B','E','C','A'],
-            8: ['C','A','B','C','A','D']
-        }
-        rules_seq = mapping.get(rules_type)
-        if not rules_seq:
-            print("Invalid type")
-        else:
-            lines = generate_narrative(initial, rules_seq)
-            print("\n".join(lines))
-    except Exception as exc:
-        print
