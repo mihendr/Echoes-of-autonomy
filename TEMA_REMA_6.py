@@ -48,6 +48,27 @@ elif rules_type == 7:
 elif rules_type == 8:
     rules_seq = ['C','A','B','C','A','D']      #'Σ8: Humoristic Effect
 
+audio_map = {
+    1: "audio/1.mp3",
+    2: "audio/2.mp3",
+    3: "audio/3.mp3",
+    4: "audio/4.mp3",
+    5: "audio/5.mp3",
+    6: "audio/6.mp3",
+    7: "audio/7.mp3",
+    8: "audio/8.mp3",
+}
+
+# Бутон за музика
+if st.button("Music"):
+    audio_path = audio_map.get(rules_type)
+    try:
+        with open(audio_path, "rb") as f:
+            st.audio(f.read(), format="audio/mp3")
+    except Exception:
+        st.warning("Audio file not found. Ensure audio files are in the repo at the expected path.")
+
+
 narrative_system_prompt = """You are a micro‑narrative generator that MUST enforce topic–comment (theme–rheme) linking via strict local UD-style constraints and explicit coreference. Violations are not allowed.
 
 Global constraints:
