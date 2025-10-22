@@ -32,7 +32,7 @@ if rules_type_raw:
     try:
         rules_type = int(rules_type_raw)
         if rules_type not in range(1, 9):
-            st.error("❌ Невалидно число. Моля въведи стойност от 1 до 8.")
+            st.error("❌ Invalid number. Please enter a value from 1 to 8.")
         else:
             rules_seq = {
                 1: ['B','D','A','C','D','B','C'],
@@ -45,7 +45,7 @@ if rules_type_raw:
                 8: ['C','A','B','C','A','D']
             }[rules_type]
     except ValueError:
-        st.error("❌ Моля въведи цяло число между 1 и 8.")
+        st.error("❌ Numlers, please")
 
 narrative_system_prompt = """You are a micro‑narrative generator that MUST enforce topic–comment (theme–rheme) linking via strict local UD-style constraints and explicit coreference. Violations are not allowed.
 
