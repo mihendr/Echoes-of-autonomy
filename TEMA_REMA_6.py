@@ -17,7 +17,10 @@ client = OpenAI(
 MODEL = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"
 
 st.title("Narrative Generator")
-
+st.markdown("""
+**Type [1–8]:**__1. Cathartic Cycle__2. Existential Spiral__3. Harmonic Duo-motif__4. Heroic Rise  
+5. Tragic Counterpoint__6. Meditative Cycle__7. Introspective Fold__8. Humoristic Effect
+""")
 initial_sentence = st.text_input("Initial phrase:", value="")
 
 st.markdown("""
