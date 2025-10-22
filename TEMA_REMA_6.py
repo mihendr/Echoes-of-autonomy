@@ -25,7 +25,7 @@ st.markdown("""
 **Type [1–8]:**__1. Cathartic Cycle__2. Existential Spiral__3. Harmonic Duo-motif__4. Heroic Rise  
 5. Tragic Counterpoint__6. Meditative Cycle__7. Introspective Fold__8. Humoristic Effect
 """)
-rules_type_raw = st.text_input(".")
+rules_type_raw = st.text_input("")
 rules_seq = None
 
 if rules_type_raw:
