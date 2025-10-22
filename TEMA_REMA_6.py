@@ -23,17 +23,7 @@ st.markdown("""
 """)
 initial_sentence = st.text_input("Initial phrase:", value="")
 
-st.markdown("""
-**Type [1–8]:**
-1. Cathartic Cycle  
-2. Existential Spiral  
-3. Harmonic Duo-motif  
-4. Heroic Rise  
-5. Tragic Counterpoint  
-6. Meditative Cycle  
-7. Introspective Fold  
-8. Humoristic Effect
-""")
+
 
 rules_type_raw = st.text_input("")
 rules_seq = None
