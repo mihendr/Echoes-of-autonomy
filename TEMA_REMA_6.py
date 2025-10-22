@@ -20,7 +20,19 @@ st.title("Narrative Generator")
 
 initial_sentence = st.text_input("Initial phrase:", value="")
 
-rules_type_raw = st.text_input("Въведи число от 1 до 8:")
+st.markdown("""
+**Type [1–8]:**
+1. Cathartic Cycle  
+2. Existential Spiral  
+3. Harmonic Duo-motif  
+4. Heroic Rise  
+5. Tragic Counterpoint  
+6. Meditative Cycle  
+7. Introspective Fold  
+8. Humoristic Effect
+""")
+
+rules_type_raw = st.text_input("")
 rules_seq = None
 
 if rules_type_raw:
