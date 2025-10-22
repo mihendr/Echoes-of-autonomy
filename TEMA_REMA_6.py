@@ -153,16 +153,13 @@ if "narrative" in st.session_state:
     st.text(st.session_state["narrative"])
 
 if st.button("Music") and rules_seq:
-    audio_path = f"audio/S{rules_type}_full_instruments.mp3"
-    try:
-        st.markdown(
-            f"""
-            <audio autoplay>
-                <source src="{audio_path}" type="audio/mp3">
-            </audio>
-            """,
-            unsafe_allow_html=True
-        )
-    except Exception:
-        st.warning(f"Audio file not found at {audio_path}. Make sure the file exists.")
+    audio_url = f"https://mihendr.github.io/midi-sequences/S{rules_type}_full_instruments.mp3"
+    st.markdown(
+        f"""
+        <audio autoplay controls>
+            <source src="{audio_url}" type="audio/mp3">
+        </audio>
+        """,
+        unsafe_allow_html=True
+    )
 
