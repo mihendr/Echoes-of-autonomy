@@ -120,7 +120,7 @@ if st.button("Generate") and rules_seq:
     '''
 
     try:
-        with st.spinner("Генериране на разказ..."):
+        with st.spinner("Generating story..."):
             resp = client.chat.completions.create(
                 model=MODEL,
                 messages=[
@@ -132,7 +132,7 @@ if st.button("Generate") and rules_seq:
                 max_tokens=220
             )
     except:
-        with st.spinner("Генериране на разказ (backup)..."):
+        with st.spinner("Generating story (backup)..."):
             resp = backup_client.chat.completions.create(
                 model=MODEL,
                 messages=[
