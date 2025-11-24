@@ -12,13 +12,8 @@ try:
     import streamlit as st
 except Exception:
     st = None
-"""
-try:
-    spacy.load("en_core_web_sm")
-except OSError:
-    from spacy.cli import download
-    download("en_core_web_sm")
-"""
+
+
 
 
 # =========================
@@ -569,13 +564,13 @@ def analyze_and_print(chords, key_tonality):
     """
     list_major_minor, list_seventh, list_accidentals = classify_chords(chords)
 
-    """
-    print("Transposed chords:", transposed_chords)
-    print("Chord roots:", chord_list_roots)
-    print("Major/Minor classification:", list_major_minor)
-    print("Seventh chords:", list_seventh)
-    print("Accidentals:", list_accidentals)
-    """
+    
+    #print("Transposed chords:", transposed_chords)
+    #print("Chord roots:", chord_list_roots)
+    #print("Major/Minor classification:", list_major_minor)
+    #print("Seventh chords:", list_seventh)
+    #print("Accidentals:", list_accidentals)
+    
     return chord_list_roots, list_major_minor, list_seventh, list_accidentals, tonic_name, mode
 
 # =========================
@@ -844,11 +839,14 @@ def main():
         clean_text = re.sub(r"\*\*(.*?)\*\*", r"\1", result)
         text_history.append((clean_text, chord))
 
-    a=0    
-    print("\n--- Final text history ---")
+    
+
+    a = 0    
+    st.write("--- Final text history ---")
     for sentence, chord in text_history:
-        print(f"{a}.{sentence.strip()} [{chord}]")
-        a+=1
+        st.write(f"{a}. {sentence.strip()} [{chord}]")
+        a += 1
+
 
 if __name__ == "__main__":
     main()
