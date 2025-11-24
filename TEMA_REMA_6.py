@@ -120,7 +120,7 @@ def object_to_pronoun(word):
 
 # === Правила ===
 
-def generate_sentence_rule_A(word_1, word_2, text_history, model_gemini, response_func, rich):
+def generate_sentence_rule_A(word_1, word_2, text_history, model_gemini, response_func, rich_rich):
     word_1 = pronoun_to_object(word_1)
     prompt = f"""
         Context:
@@ -128,19 +128,19 @@ def generate_sentence_rule_A(word_1, word_2, text_history, model_gemini, respons
 
         Write one new short sentence where the direct object or indirect object
         or object of a preposition is '{word_1}' and the subject is neither '{word_1}' nor '{word_2}'.
-        If it sounds naturally {rich}
+        If it sounds naturally {rich_rich}
         Only final sentence.
        
     """
-    #if rich:
-       #print(rich)
+    #if rich_rich:
+       #print(rich_rich)
     if response_func:
         return response_func(prompt)
     else:
         response = model_gemini.generate_content(prompt)
         return response.text
 
-def generate_sentence_rule_B(word_1, word_2, text_history, model_gemini, response_func, rich):
+def generate_sentence_rule_B(word_1, word_2, text_history, model_gemini, response_func, rich_rich):
     word_2 = pronoun_to_object(word_2)
     #print(word_1, word_2)
     prompt = (
@@ -148,13 +148,13 @@ def generate_sentence_rule_B(word_1, word_2, text_history, model_gemini, respons
         Context:\n{text_history}\n\n
         Write one new short sentence where the subject is '{word_2}'
         and the direct object is neither '{word_1}' nor '{word_2}'.
-        If it sounds naturally {rich}
+        If it sounds naturally {rich_rich}
         Only final sentence.
         
         """
     )
-    #if rich:
-        #print(rich)
+    #if rich_rich:
+        #print(rich_rich)
     if response_func:
         return response_func(prompt)
     else:
@@ -162,19 +162,19 @@ def generate_sentence_rule_B(word_1, word_2, text_history, model_gemini, respons
         return response.text
 
 
-def generate_sentence_rule_C(word_1, word_2, text_history, model_gemini, response_func, rich):
+def generate_sentence_rule_C(word_1, word_2, text_history, model_gemini, response_func, rich_rich):
     prompt = (
         f"""
         Context:\n{text_history}\n\n
         Write one new short sentence where the subject is '{word_1}'
         and do not include '{word_2}'.
-        If it sounds naturally {rich}
+        If it sounds naturally {rich_rich}
         Only final sentence.
         
         """
     )
-    #if rich:
-        #print(rich)
+    #if rich_rich:
+        #print(rich_rich)
     if response_func:
         return response_func(prompt)
     else:
@@ -182,19 +182,19 @@ def generate_sentence_rule_C(word_1, word_2, text_history, model_gemini, respons
         return response.text
 
 
-def generate_sentence_rule_D(word_1, word_2, text_history, model_gemini, response_func, rich):
+def generate_sentence_rule_D(word_1, word_2, text_history, model_gemini, response_func, rich_rich):
     prompt = (
         f"""
         Context:\n{text_history}\n\n
         Write one new short sentence where neither the subject
         nor the object is '{word_1}' or '{word_2}'.
-        If it sounds naturally {rich}
+        If it sounds naturally {rich_rich}
         Only final sentence.
         
         """
     )
-    #if rich:
-        #print(rich)
+    #if rich_rich:
+        #print(rich_rich)
     if response_func:
         return response_func(prompt)
     else:
@@ -202,7 +202,7 @@ def generate_sentence_rule_D(word_1, word_2, text_history, model_gemini, respons
         return response.text
 
 
-def generate_sentence_rule_E(word_1, word_2, text_history, model_gemini, response_func, rich):
+def generate_sentence_rule_E(word_1, word_2, text_history, model_gemini, response_func, rich_rich):
     word_2 = pronoun_to_object(word_2)
     word_1 = pronoun_to_object(word_1)
     prompt = (
@@ -210,13 +210,13 @@ def generate_sentence_rule_E(word_1, word_2, text_history, model_gemini, respons
         Context:\n{text_history}\n\n
         Write one new short sentence where the subject is '{word_2}'
         and the object is '{word_1}'.
-        If it sounds naturally {rich}
+        If it sounds naturally {rich_rich}
         Only final sentence.
         
         """
     )
-    #if rich:
-        #print(rich)
+    #if rich_rich:
+        #print(rich_rich)
     if response_func:
         return response_func(prompt)
     else:
@@ -224,7 +224,7 @@ def generate_sentence_rule_E(word_1, word_2, text_history, model_gemini, respons
         return response.text
 
 
-def generate_sentence_rule_F(word_1="", word_2="", text_history="", model_gemini=None, response_func=None, rich=""):
+def generate_sentence_rule_F(word_1="", word_2="", text_history="", model_gemini=None, response_func=None, rich_rich=""):
     if word_1 == "minor":
         prompt = (
             f"Context:\n{text_history}\n\n"
@@ -247,7 +247,7 @@ def generate_sentence_rule_F(word_1="", word_2="", text_history="", model_gemini
         response = model_gemini.generate_content(prompt)
         return response.text
 
-def generate_sentence_rule_G(word_1="", word_2="", text_history="", model_gemini=None, response_func=None, rich=""):
+def generate_sentence_rule_G(word_1="", word_2="", text_history="", model_gemini=None, response_func=None, rich_rich=""):
     
     if word_1 == "minor":
         prompt = (
@@ -269,14 +269,14 @@ def generate_sentence_rule_G(word_1="", word_2="", text_history="", model_gemini
         response = model_gemini.generate_content(prompt)
         return response.text
     
-def generate_sentence_rule_H(word_1="", word_2="", text_history="", model_gemini=None, response_func=None, rich=""):
+def generate_sentence_rule_H(word_1="", word_2="", text_history="", model_gemini=None, response_func=None, rich_rich=""):
     
     if word_1 == "minor":
         prompt = (
             f"Context:\n{text_history}\n\n"
             f"Write one new short phrase related with previous line using synonyms or tense shift. Do not invent new entities or events."
             f"Never repeat existing in {text_history} phrase!"
-            f"If it sounds naturally {rich}"
+            f"If it sounds naturally {rich_rich}"
             f"Only final sentence!!!"
         )
     else:
@@ -284,11 +284,11 @@ def generate_sentence_rule_H(word_1="", word_2="", text_history="", model_gemini
             f"Context:\n{text_history}\n\n"
             f"Write one new short phrase related with previous line using synonyms or tense shift. Do not invent new entities or events."
             f"Never repeat existing in {text_history} phrase!"
-            f"If it sounds naturally {rich}"
+            f"If it sounds naturally {rich_rich}"
             f"Only final sentence!!!"
         )
-    #if rich:
-        #print(rich)    
+    #if rich_rich:
+        #print(rich_rich)    
     if response_func:
         return response_func(prompt)
     else:
@@ -788,34 +788,34 @@ def main():
             
             
             root = chord_list_roots[a] 
-            rich = None
+            rich_rich = None
             if list_accidentals[a] == 22:
                 key = root + "b"   # напр. "C" + "b" → "Cb"
-                rich = adv_dict.get(key)
+                rich_rich= adv_dict.get(key)
             
             if list_accidentals[a] == 11:
                 key = root + "#"
-                rich = conj_dict.get(key)
+                rich_rich = conj_dict.get(key)
             
             if list_seventh[a] == 7:
                 if list_major_minor[a] == 2: 
-                    rich = adv_dict.get("m7")
+                    rich_rich = adv_dict.get("m7")
                 else:
-                    rich = conj_dict.get("maj 7")
+                    rich_rich = conj_dict.get("maj 7")
                 
             if chord_list_roots[a] == "H":
                 if list_major_minor[a-1] == 2:
-                    rich = adv_dict.get("pause min")
+                    rich_rich = adv_dict.get("pause min")
                 else:
-                    rich = conj_dict.get("pause maj")
+                    rich_rich = conj_dict.get("pause maj")
                 
-            # rich = None   
-            #print(a+1,".....",">>>    ", rich, "<<<<<<")    
+            # rich_rich = None   
+            #print(a+1,".....",">>>    ", rich_rich, "<<<<<<")    
             if request_count <= 14:    
                 if chord == "F" or chord == "G" or chord == "H":
-                    result = rule_func(mode, last_obj, full_text, model_gemini, None, rich)
+                    result = rule_func(mode, last_obj, full_text, model_gemini, None, rich_rich)
                 else:    
-                    result = rule_func(last_subj, last_obj, full_text, model_gemini, None, rich)
+                    result = rule_func(last_subj, last_obj, full_text, model_gemini, None, rich_rich)
             else:
                 def llama_generate(prompt):
                     response = client.chat.completions.create(
@@ -837,9 +837,9 @@ def main():
                     return response.choices[0].message.content.strip()
 
                 if chord == "F" or chord == "G" or chord == "H":
-                    result = rule_func(mode, last_obj, full_text, None, llama_generate, rich)
+                    result = rule_func(mode, last_obj, full_text, None, llama_generate, rich_rich)
                 else:    
-                    result = rule_func(last_subj, last_obj, full_text, None, llama_generate, rich)
+                    result = rule_func(last_subj, last_obj, full_text, None, llama_generate, rich_rich)
             a +=1
         clean_text = re.sub(r"\*\*(.*?)\*\*", r"\1", result)
         text_history.append((clean_text, chord))
