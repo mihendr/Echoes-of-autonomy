@@ -798,10 +798,11 @@ def main():
 
     a = 0    
     st.write("--- Final text history ---")
-    for sentence, chord in text_history:
-        #st.write(f"{a}. {sentence.strip()} [{chord}]")
-        st.text(f"{a}. {sentence.strip()} [{chord}]")
-        a += 1
+    buf = []
+    for a, (sentence, chord) in enumerate(text_history, start=1):
+        buf.append(f"{a}. {sentence.strip()} [{chord}]")
+    st.text("\n".join(buf))
+
 
 
 if __name__ == "__main__":
