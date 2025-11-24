@@ -1,5 +1,6 @@
-spacy>=3.5
+spacy>=3.8.0
 music21
 google-generativeai
 openai
-en-core-web-sm>=3.8.0
+streamlit
+rich
