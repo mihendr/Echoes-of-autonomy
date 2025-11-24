@@ -592,10 +592,10 @@ def user_prompt():
                 st.session_state['key_tonality'] = key_val
                 st.session_state['key_confirm'] = True
 
-        if st.session_state['Key_confirm']:
-            st.success("Key confirmed.")
+        if st.session_state['key_confirm']:
+            st.success("key confirmed.")
         else:
-            st.info("Key not confirmed.")
+            st.info("key not confirmed.")
 
         # If not all confirmed, stop execution here in Streamlit
         if not (st.session_state['init_confirm'] and st.session_state['chords_confirm'] and st.session_state['key_confirm']):
