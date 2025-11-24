@@ -658,7 +658,7 @@ def main():
     GOOGLE_API_KEY = None
 
     # Опитай различни layouts в secrets
-i   if "GOOGLE_API_KEY" in st.secrets:
+    if "GOOGLE_API_KEY" in st.secrets:
         GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
     elif "google" in st.secrets and isinstance(st.secrets["google"], dict) and "api_key" in st.secrets["google"]:
         GOOGLE_API_KEY = st.secrets["google"]["api_key"]
