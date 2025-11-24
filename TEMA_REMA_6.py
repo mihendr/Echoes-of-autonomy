@@ -303,11 +303,7 @@ def generate_sentence_rule_H(word_1="", word_2="", text_history="", model_gemini
     
     
 def extract_root_letters_from_transposed(transposed_chords):
-    """
-    Връща списък с само буквите A-G (големи) или 'P' за пауза (голяма),
-    за всеки елемент в transposed_chords.
-    Ако не може да се открие буква A-G или 'P' във входния елемент, връща '?' на същата позиция.
-    """
+   
     chord_list_roots = []
     for ch in transposed_chords:
         try:
@@ -330,11 +326,7 @@ def extract_root_letters_from_transposed(transposed_chords):
     return chord_list_roots    
 
 def normalize_chord_name(ch):
-    """
-    Нормализира един акорден маркър:
-    'Bb' или 'B♭' -> 'B-' (music21 използва '-' за бемол)
-    премахва излишни интервали
-    """
+    
     if ch is None:
         return ch
     ch = ch.strip()
@@ -343,11 +335,7 @@ def normalize_chord_name(ch):
     return ch
 
 def chords_to_list(input_string):
-    """
-    Преобразува низ от акорди в списък.
-    ВАЖНО: поддържа само разделител ',' (comma). Не използвайте тире като разделител,
-    защото '-' означава бемол в music21.
-    """
+   
     if not input_string:
         return []
     if ' - ' in input_string:
@@ -356,12 +344,7 @@ def chords_to_list(input_string):
     return [normalize_chord_name(p) for p in parts]
 
 def classify_chords(chords):
-    """
-    Анализира списък от акорди и връща три паралелни списъка:
-    - 1 = мажор (включва доминантни), 2 = минор, 0 = друго, -1 = неразпознат
-    - 7 = съдържа седма, 0 = няма седма, -1 = неразпознат
-    - 11 = диез, 22 = бемол, 0 = нито, -1 = неразпознат
-    """
+   
     list_major_minor = []
     list_seventh = []
     list_accidentals = []
@@ -421,12 +404,7 @@ def classify_chords(chords):
     return list_major_minor, list_seventh, list_accidentals
 
 def simple_key_estimate(chord_list):
-    """
-    Възстановена оригинална/опростена функция за оценка на тоналността.
-    Връща: tonic_name, mode, best_key_object, stream
-    (Забележка: ако някой от анализаторите във s.analyze(...) хвърли изключение,
-     това ще прекъсне функцията — това е поведението на оригинала.)
-    """
+    
     s = stream.Stream()
     for ch in chord_list:
         s.append(harmony.ChordSymbol(ch))
@@ -450,11 +428,7 @@ def simple_key_estimate(chord_list):
     return best_key.tonic.name, best_key.mode, best_key, s
 
 def parse_user_key(user_key_str):
-    """
-    Връща (tonic_str, mode_str) като низове:
-    - tonic_str: синтаксис на music21 ('-' за бемол, '#' за диез), напр. 'C#', 'B-'
-    - mode_str: 'major' или 'minor', според това дали входът завършва на 'm'
-    """
+    
     s = user_key_str.strip()
     is_minor = s.lower().endswith('m')
     mode_str = 'minor' if is_minor else 'major'
@@ -486,10 +460,7 @@ def transpose_chords_to_reference(chords, user_key_str):
 
 
 def analyze_and_print(chords, key_tonality):
-    """
-    Анализира акорди, отпечатва резултати и връща:
-    (chord_list_roots, list_major_minor, list_seventh, list_accidentals, tonic_name, mode)
-    """
+    
     if not chords:
         print("NO CHORDS")
         return [], [], [], [], None, None
@@ -532,7 +503,7 @@ def analyze_and_print(chords, key_tonality):
     
     
     
-    # Вземаме само буквите A-G от транспонираните акорди
+    
     transposed_chords = extract_root_letters_from_transposed(transposed_chords)
     
     chord_list_roots = []
@@ -550,18 +521,7 @@ def analyze_and_print(chords, key_tonality):
         except Exception:
             chord_list_roots.append('?')
             
-    """        
-    chord_list_roots = []
-    for ch in transposed_chords:
-        try:
-            cs = harmony.ChordSymbol(ch)
-            root = cs.root()
-            root_name = root.name if root is not None else ''
-            root_name = root_name.replace('-', 'b')
-            chord_list_roots.append(root_name or '?')
-        except Exception:
-            chord_list_roots.append('?')
-    """
+   
     list_major_minor, list_seventh, list_accidentals = classify_chords(chords)
 
     
@@ -577,12 +537,7 @@ def analyze_and_print(chords, key_tonality):
 # === STREAMLIT-READY INPUT
 # =========================
 def user_prompt():
-    """
-    If Streamlit is available, show three inputs and three confirm buttons.
-    The rest of the code expects the function to return:
-    init_phrase, chord_list_roots, list_major_minor, list_seventh, list_accidentals, tonic, mode
-    In non-Streamlit environment, behave like the original CLI input().
-    """
+    
     if st:
         # initialize session state keys
         if 'init_confirm' not in st.session_state:
@@ -599,52 +554,52 @@ def user_prompt():
         if 'key_tonality' not in st.session_state:
             st.session_state['key_tonality'] = ""
 
-        st.markdown("## Въведете данни")
+        st.markdown("## Enter data")
         # Initial phrase input + confirm button
         init_col, init_btn_col = st.columns([4,1])
         with init_col:
             init_phrase_val = st.text_input("Initial Phrase :", value=st.session_state['init_phrase'])
         with init_btn_col:
-            if st.button("Потвърди Initial Phrase"):
+            if st.button("Confirm Initial Phrase"):
                 st.session_state['init_phrase'] = init_phrase_val
                 st.session_state['init_confirm'] = True
 
         if st.session_state['init_confirm']:
-            st.success("Initial Phrase потвърдено.")
+            st.success("Initial Phrase confirmed.")
         else:
-            st.info("Initial Phrase НЕ е потвърдено.")
+            st.info("Initial Phrase not confirmed.")
 
         # Chords input + confirm button
         chords_col, chords_btn_col = st.columns([4,1])
         with chords_col:
-            chords_val = st.text_input("Въведете акорди, разделени със запетая:", value=st.session_state['chords_raw'])
+            chords_val = st.text_input("Enter chords separated by commas:", value=st.session_state['chords_raw'])
         with chords_btn_col:
-            if st.button("Потвърди Акорди"):
+            if st.button("Confirm chords"):
                 st.session_state['chords_raw'] = chords_val
                 st.session_state['chords_confirm'] = True
 
         if st.session_state['chords_confirm']:
-            st.success("Акорди потвърдени.")
+            st.success("Chords confirmed.")
         else:
-            st.info("Акорди НЕ са потвърдени.")
+            st.info("Chords not confirmed.")
 
         # Key input + confirm button
         key_col, key_btn_col = st.columns([4,1])
         with key_col:
-            key_val = st.text_input("Въведете основна тоналност:", value=st.session_state['key_tonality'])
+            key_val = st.text_input("Enter main key:", value=st.session_state['key_tonality'])
         with key_btn_col:
-            if st.button("Потвърди Тоналност"):
+            if st.button("Confirm Key"):
                 st.session_state['key_tonality'] = key_val
                 st.session_state['key_confirm'] = True
 
-        if st.session_state['key_confirm']:
-            st.success("Тоналност потвърдена.")
+        if st.session_state['Key_confirm']:
+            st.success("Key confirmed.")
         else:
-            st.info("Тоналност не е потвърдена.")
+            st.info("Key not confirmed.")
 
         # If not all confirmed, stop execution here in Streamlit
         if not (st.session_state['init_confirm'] and st.session_state['chords_confirm'] and st.session_state['key_confirm']):
-            st.warning("Моля, потвърдете всички полета чрез бутоните отдясно на всеки вход, за да продължите.")
+            st.warning("Please confirm all fields using the buttons to the right of each entry to continue.")
             st.stop()
 
         # All confirmed: proceed with the same processing as original CLI
@@ -658,8 +613,8 @@ def user_prompt():
 
     # Fallback: original CLI behavior
     init_phrase = input("Initial Phrase :  ")
-    user_input = input("Въведете акорди, разделени със запетая: ")
-    key_tonality = input("Въведете основна тоналност: ")
+    user_input = input("Enter chords separated by commas: ")
+    key_tonality = input("Enter the key ( e.g. C, e.g Dm ): ")
     
     
     chords = chords_to_list(user_input)
@@ -668,7 +623,7 @@ def user_prompt():
 
 # =========================
 # =========================
-# === ОБЕДИНЕН MAIN ======
+# ===  MAIN ======
 # =========================
 
 
@@ -700,19 +655,18 @@ def main():
     }
 
     # --- Gemini модел с правилна конфигурация ---
-    # If running under Streamlit, prefer reading API keys from st.secrets (user may populate there).
-    if st:
-        # try multiple common secret layouts
-        GOOGLE_API_KEY = None
-        if "GOOGLE_API_KEY" in st.secrets:
-            GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-        elif "google" in st.secrets and isinstance(st.secrets["google"], dict) and "api_key" in st.secrets["google"]:
-            GOOGLE_API_KEY = st.secrets["google"]["api_key"]
-        else:
-            # fallback to original hardcoded key if user didn't set secrets
-            GOOGLE_API_KEY = 'AIzaSyAgOUOzMDGaCdd-m693gjs6cAtN1dvK-UE'
+    GOOGLE_API_KEY = None
+
+    # Опитай различни layouts в secrets
+i   if "GOOGLE_API_KEY" in st.secrets:
+        GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+    elif "google" in st.secrets and isinstance(st.secrets["google"], dict) and "api_key" in st.secrets["google"]:
+        GOOGLE_API_KEY = st.secrets["google"]["api_key"]
+
+    if not GOOGLE_API_KEY:
+        st.error("Google API key not found. Please set it in Streamlit secrets.")
     else:
-        GOOGLE_API_KEY = 'AIzaSyAgOUOzMDGaCdd-m693gjs6cAtN1dvK-UE'
+        genai.configure(api_key=GOOGLE_API_KEY)
 
     try:
         if GOOGLE_API_KEY:
@@ -730,17 +684,18 @@ def main():
         }
     )
     
-    # Configure GROQ/OpenAI client: prefer secrets when available
-    if st:
-        GROQ_KEY = None
-        if "GROQ_API_KEY" in st.secrets:
-            GROQ_KEY = st.secrets["GROQ_API_KEY"]
-        elif "groq" in st.secrets and isinstance(st.secrets["groq"], dict) and "api_key" in st.secrets["groq"]:
-            GROQ_KEY = st.secrets["groq"]["api_key"]
-        else:
-            GROQ_KEY = "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"
-    else:
-        GROQ_KEY = "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"
+    
+    
+
+    GROQ_KEY = None
+
+    if "GROQ_API_KEY" in st.secrets:
+        GROQ_KEY = st.secrets["GROQ_API_KEY"]
+    elif "groq" in st.secrets and isinstance(st.secrets["groq"], dict) and "api_key" in st.secrets["groq"]:
+        GROQ_KEY = st.secrets["groq"]["api_key"]
+
+    if not GROQ_KEY:
+        st.error("No GROQ API key found. Please set it in Streamlit secrets.")
 
     client = OpenAI(api_key=GROQ_KEY, base_url="https://api.groq.com/openai/v1")
     GROQ_MODEL = "llama-3.1-8b-instant"
