@@ -586,7 +586,7 @@ def user_prompt():
         # Key input + confirm button
         key_col, key_btn_col = st.columns([4,1])
         with key_col:
-            key_val = st.text_input("Enter main key:", value=st.session_state['key_tonality'])
+            key_val = st.text_input("Enter main key ( e.g. C, e.g Dm ): ", value=st.session_state['key_tonality'])
         with key_btn_col:
             if st.button("Confirm Key"):
                 st.session_state['key_tonality'] = key_val
@@ -799,7 +799,8 @@ def main():
     a = 0    
     st.write("--- Final text history ---")
     for sentence, chord in text_history:
-        st.write(f"{a}. {sentence.strip()} [{chord}]")
+        #st.write(f"{a}. {sentence.strip()} [{chord}]")
+        st.text(f"{a}. {sentence.strip()} [{chord}]")
         a += 1
 
 
