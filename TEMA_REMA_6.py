@@ -554,7 +554,7 @@ def user_prompt():
         if 'key_tonality' not in st.session_state:
             st.session_state['key_tonality'] = ""
 
-        st.markdown("## HARMONY TO TEXT GENERATOR")
+        st.markdown("## Harmony to text Generator")
         # Initial phrase input + confirm button
         init_col, init_btn_col = st.columns([4,1])
         with init_col:
