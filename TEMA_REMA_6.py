@@ -572,7 +572,7 @@ def user_prompt():
         # Chords input + confirm button
         chords_col, chords_btn_col = st.columns([4,1])
         with chords_col:
-            chords_val = st.text_input("Enter chords separated by commas:", value=st.session_state['chords_raw'])
+            chords_val = st.text_input("Enter chords separated by commas, \n        `P` for `pause` :", value=st.session_state['chords_raw'])
         with chords_btn_col:
             if st.button("Confirm chords"):
                 st.session_state['chords_raw'] = chords_val
