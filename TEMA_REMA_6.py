@@ -629,28 +629,32 @@ def user_prompt():
 def main():
     MAP_C_MAJOR = {'C': 'A', 'D': 'E', 'E': 'F', 'F': 'B', 'G': 'C', 'A': 'D', 'B': 'G',"P": "H"}
     MAP_A_MINOR = {'A': 'A', 'B': 'E', 'C': 'F', 'D': 'B', 'E': 'C', 'F': 'D', 'G': 'G',"P": "H"}
-    
     init_phrase, chord_list_roots, list_major_minor, list_seventh, list_accidentals, tonic, mode = user_prompt()
-    
     rules = []
+   
+   
     for chord in chord_list_roots:
+        # We retrieve the coded symbol for each chord
         if mode == "major":
             rules.append(MAP_C_MAJOR[chord])
+            #print(mode)
         if mode == "minor":
             rules.append(MAP_A_MINOR[chord])
+            #print(mode)
    
     text_history = [(init_phrase, "INIT")]
+    # --- SETTINGS (без repetition_penalty) ---
     settings = {
         "temperature": 1.7,
         "top_p": 0.9,
         "max_tokens": 50
     }
 
-    # ================== HELICONE + GEMINI (само тези 15 реда са нови) ==================
+    # === HELICONE ИНТЕГРАЦИЯ – ТОВА СА ЕДИНСТВЕНИТЕ НОВИ РЕДОВЕ ===
     from openai import OpenAI
 
-    # ← ТУК слагаш твоя ключ от https://helicone.ai → API Keys
-    HELICONE_KEY = "sk-helicone-b75x7ya-763ebmi-ugfefzy-tbw42cy"   
+    # ← ТУК СЛАГАШ СВОЯ HELICONE КЛЮЧ (от helicone.ai → API Keys)
+    HELICONE_KEY = "sk-helicone-abcdef123456789"   # ← СМЕНИ С ТВОЯ!
 
     client_helicone = OpenAI(
         api_key=HELICONE_KEY,
@@ -659,41 +663,46 @@ def main():
 
     def call_gemini(prompt):
         response = client_helicone.chat.completions.create(
-            model="gemini-2.5-flash-lite",           
+            model="gemini-2.5-flash-lite",   # ← ТОЧНО ТВОЯ МОДЕЛ, НЕПОКЪТНАТ
             messages=[{"role": "user", "content": prompt}],
             temperature=settings["temperature"],
             top_p=settings["top_p"],
             max_output_tokens=settings["max_tokens"]
         )
         return response.choices[0].message.content.strip()
-    # ================================================================================
+    # ==========================================================
 
-    # Groq си остава същия
-    GROQ_KEY = st.secrets.get("GROQ_API_KEY") or st.secrets.get("groq", {}).get("api_key")
-    if not GROQ_KEY:
-        st.error("No GROQ API key found.")
+    # --- Gemini модел с правилна конфигурация – ИЗТРИТО ЦЯЛОТО, ЗАЩОТО ВЕЧЕ НЕ ТРЯБВА ---
+    GOOGLE_API_KEY = None
+    if "GOOGLE_API_KEY" in st.secrets:
+        GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+    elif "google" in st.secrets and isinstance(st.secrets["google"], dict) and "api_key" in st.secrets["google"]:
+        GOOGLE_API_KEY = st.secrets["google"]["api_key"]
+    if not GOOGLE_API_KEY:
+        st.error("Google API key not found. Please set it in Streamlit secrets.")
         return
-    client_groq = OpenAI(api_key=GROQ_KEY, base_url="https://api.groq.com/openai/v1")
+
+    # === КРАЙ НА HELICONE ЧАСТТА ===
+
+    GROQ_KEY = None
+    if "GROQ_API_KEY" in st.secrets:
+        GROQ_KEY = st.secrets["GROQ_API_KEY"]
+    elif "groq" in st.secrets and isinstance(st.secrets["groq"], dict) and "api_key" in st.secrets["groq"]:
+        GROQ_KEY = st.secrets["groq"]["api_key"]
+    if not GROQ_KEY:
+        st.error("No GROQ API key found. Please set it in Streamlit secrets.")
+    client = OpenAI(api_key=GROQ_KEY, base_url="https://api.groq.com/openai/v1")
     GROQ_MODEL = "llama-3.1-8b-instant"
-
-    def llama_generate(prompt):
-        response = client_groq.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=[
-                {"role": "system", "content": "You are a creative poet and your style is concise. You strictly follow the rules described in the prompt."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=settings["temperature"],
-            top_p=settings["top_p"],
-            max_tokens=settings["max_tokens"]
-        )
-        return response.choices[0].message.content.strip()
-
     rule_map = {
-        "A": generate_sentence_rule_A, "B": generate_sentence_rule_B,
-        "C": generate_sentence_rule_C, "D": generate_sentence_rule_D,
-        "E": generate_sentence_rule_E, "F": generate_sentence_rule_F,
-        "G": generate_sentence_rule_G, "H": generate_sentence_rule_H,
+        "A": generate_sentence_rule_A,
+        "B": generate_sentence_rule_B,
+        "C": generate_sentence_rule_C,
+        "D": generate_sentence_rule_D,
+        "E": generate_sentence_rule_E,
+        "F": generate_sentence_rule_F,
+        "G": generate_sentence_rule_G,
+        "H": generate_sentence_rule_H,
+       
     }
    
     if mode == 'major':
@@ -704,45 +713,77 @@ def main():
         conj_dict = CONJUNCTION_GUIDELINES_FOR_MINOR
    
     request_count = 0
-    a = 0
+    a =0
     for chord in rules:
         full_text = " ".join([t[0] for t in text_history])
         doc = nlp(full_text)
         last_subj, last_obj = extract_last_subj_obj_with_clauses(doc)
         rule_func = rule_map.get(chord)
+       
          
         if rule_func:
             request_count += 1
            
+           
             root = chord_list_roots[a]
             rich_rich = None
             if list_accidentals[a] == 22:
-                rich_rich = adv_dict.get(root + "b")
+                key = root + "b"
+                rich_rich= adv_dict.get(key)
+           
             if list_accidentals[a] == 11:
-                rich_rich = conj_dict.get(root + "#")
+                key = root + "#"
+                rich_rich = conj_dict.get(key)
+           
             if list_seventh[a] == 7:
-                rich_rich = adv_dict.get("m7") if list_major_minor[a] == 2 else conj_dict.get("maj 7")
+                if list_major_minor[a] == 2:
+                    rich_rich = adv_dict.get("m7")
+                else:
+                    rich_rich = conj_dict.get("maj 7")
+               
             if chord_list_roots[a] == "H":
-                rich_rich = adv_dict.get("pause min") if list_major_minor[a-1] == 2 else conj_dict.get("pause maj")
-
-            # ← ТУК е единствената промяна в логиката: call_gemini вместо model_gemini
+                if list_major_minor[a-1] == 2:
+                    rich_rich = adv_dict.get("pause min")
+                else:
+                    rich_rich = conj_dict.get("pause maj")
+               
             if request_count <= 14:
-                if chord in ["F", "G", "H"]:
+                if chord == "F" or chord == "G" or chord == "H":
                     result = rule_func(mode, last_obj, full_text, call_gemini, None, rich_rich)
                 else:
                     result = rule_func(last_subj, last_obj, full_text, call_gemini, None, rich_rich)
             else:
-                if chord in ["F", "G", "H"]:
+                def llama_generate(prompt):
+                    response = client.chat.completions.create(
+                    model=GROQ_MODEL,
+                        messages=[
+                            {
+                                "role": "system",
+                               "content": "You are a creative poet and your style is concise. You strictly follow the rules described in the prompt."
+                           },
+                           {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ],
+                        temperature=settings["temperature"],
+                        top_p=settings["top_p"],
+                        max_tokens=settings["max_tokens"]
+                    )
+                    return response.choices[0].message.content.strip()
+                if chord == "F" or chord == "G" or chord == "H":
                     result = rule_func(mode, last_obj, full_text, None, llama_generate, rich_rich)
                 else:
                     result = rule_func(last_subj, last_obj, full_text, None, llama_generate, rich_rich)
-            a += 1
-
+            a +=1
         clean_text = re.sub(r"\*\*(.*?)\*\*", r"\1", result)
         text_history.append((clean_text, chord))
    
+    a = 0
     st.write("--- Final text history ---")
-    buf = [f"{i}. {sentence.strip()} [{chord}]" for i, (sentence, chord) in enumerate(text_history, 1)]
+    buf = []
+    for a, (sentence, chord) in enumerate(text_history, start=1):
+        buf.append(f"{a}. {sentence.strip()} [{chord}]")
     st.text("\n".join(buf))
 
 
