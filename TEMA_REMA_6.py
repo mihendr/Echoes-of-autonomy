@@ -10,27 +10,12 @@ import json
 
 from music21 import stream, harmony, key, interval, note
 
-def create_helicone_client():
-    helicone_key = os.environ.get("HELICONE_API_KEY")
+import os
+import streamlit as st
+from openai import OpenAI
 
-    if not helicone_key or helicone_key.strip() == "":
-        st.error("HELICONE_API_KEY липсва в Streamlit Secrets.")
-        return None
 
-    try:
-        client = OpenAI(
-            api_key=helicone_key,
-            base_url="https://ai-gateway.helicone.ai",
-            default_headers={
-                "Helicone-Auth": f"Bearer {helicone_key}",
-                "Helicone-Tag": "streamlit_app"
-            }
-        )
-        return client
 
-    except Exception as e:
-        st.error(f"Helicone клиентът не може да се създаде: {e}")
-        return None
 
 # --- minimal Streamlit preparation ---
 try:
@@ -653,6 +638,20 @@ def user_prompt():
 
 
 
+def create_helicone_client(helicone_key: str):
+    if not helicone_key or helicone_key.strip() == "":
+        st.error("HELICONE_API_KEY липсва в Streamlit Secrets.")
+        return None
+    try:
+        client = OpenAI(
+            api_key=helicone_key,
+            api_base="https://ai-gateway.helicone.ai"
+        )
+        return client
+    except Exception as e:
+        st.error(f"Грешка при създаване на Helicone клиент: {e}")
+        return None
+
 def helicone_gemini_generate(model_name, prompt, settings, GOOGLE_API_KEY, HELICONE_KEY):
     url = "https://ai-gateway.helicone.ai/"
 
@@ -662,11 +661,7 @@ def helicone_gemini_generate(model_name, prompt, settings, GOOGLE_API_KEY, HELIC
     )
 
     payload = {
-        "contents": [
-            {
-                "parts": [{"text": prompt}]
-            }
-        ],
+        "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": settings["temperature"],
             "topP": settings["top_p"],
@@ -682,51 +677,36 @@ def helicone_gemini_generate(model_name, prompt, settings, GOOGLE_API_KEY, HELIC
 
     response = requests.post(url, headers=headers, data=json.dumps(payload))
     data = response.json()
-
     try:
         return data["candidates"][0]["content"]["parts"][0]["text"]
     except Exception:
         return ""
 
-
 def main():
+    # --- Примерни мапове на акорди ---
     MAP_C_MAJOR = {'C': 'A', 'D': 'E', 'E': 'F', 'F': 'B', 'G': 'C', 'A': 'D', 'B': 'G', "P": "H"}
     MAP_A_MINOR = {'A': 'A', 'B': 'E', 'C': 'F', 'D': 'B', 'E': 'C', 'F': 'D', 'G': 'G', "P": "H"}
 
+    # --- Потребителски вход ---
     init_phrase, chord_list_roots, list_major_minor, list_seventh, list_accidentals, tonic, mode = user_prompt()
     rules = []
-    client = create_helicone_client()
+
+    # --- Създаване на Helicone клиент ---
+    HELICONE_KEY = st.secrets.get("HELICONE_API_KEY")
+    client = create_helicone_client(HELICONE_KEY)
     if client is None:
         st.stop()
 
     for chord in chord_list_roots:
-        if mode == "major":
-            rules.append(MAP_C_MAJOR[chord])
-        if mode == "minor":
-            rules.append(MAP_A_MINOR[chord])
+        rules.append(MAP_C_MAJOR[chord] if mode == "major" else MAP_A_MINOR[chord])
 
     text_history = [(init_phrase, "INIT")]
 
-    settings = {
-        "temperature": 1.7,
-        "top_p": 0.9,
-        "max_tokens": 50
-    }
+    settings = {"temperature": 1.7, "top_p": 0.9, "max_tokens": 50}
 
-    # --- API KEYS ---
-    GOOGLE_API_KEY = None
-    if "GOOGLE_API_KEY" in st.secrets:
-        GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-    elif "google" in st.secrets and isinstance(st.secrets["google"], dict) and "api_key" in st.secrets["google"]:
-        GOOGLE_API_KEY = st.secrets["google"]["api_key"]
-
-    GROQ_KEY = None
-    if "GROQ_API_KEY" in st.secrets:
-        GROQ_KEY = st.secrets["GROQ_API_KEY"]
-    elif "groq" in st.secrets and isinstance(st.secrets["groq"], dict) and "api_key" in st.secrets["groq"]:
-        GROQ_KEY = st.secrets["groq"]["api_key"]
-
-    HELICONE_KEY = st.secrets.get("HELICONE_API_KEY")
+    # --- API ключове ---
+    GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY")
+    GROQ_KEY = st.secrets.get("GROQ_API_KEY")
 
     if not GOOGLE_API_KEY:
         st.error("Missing GOOGLE_API_KEY")
@@ -735,35 +715,7 @@ def main():
     if not HELICONE_KEY:
         st.error("Missing HELICONE_API_KEY")
 
-    # --- HELICONE PROXY CLIENT FOR LLaMA (GROQ) ---
-    client = OpenAI(
-        api_key=HELICONE_KEY,
-        base_url="https://ai-gateway.helicone.ai",
-        extra_headers={
-            "Helicone-Auth": f"Bearer {HELICONE_KEY}",
-            "Helicone-Target-Url": "https://api.groq.com/openai/v1"
-        }
-    )
-
     GROQ_MODEL = "llama-3.1-8b-instant"
-
-    rule_map = {
-        "A": generate_sentence_rule_A,
-        "B": generate_sentence_rule_B,
-        "C": generate_sentence_rule_C,
-        "D": generate_sentence_rule_D,
-        "E": generate_sentence_rule_E,
-        "F": generate_sentence_rule_F,
-        "G": generate_sentence_rule_G,
-        "H": generate_sentence_rule_H,
-    }
-
-    if mode == 'major':
-        adv_dict = ADVERB_GUIDELINES_FOR_MAJOR
-        conj_dict = CONJUNCTION_GUIDELINES_FOR_MAJOR
-    else:
-        adv_dict = ADVERB_GUIDELINES_FOR_MINOR
-        conj_dict = CONJUNCTION_GUIDELINES_FOR_MINOR
 
     request_count = 0
     a = 0
@@ -774,83 +726,59 @@ def main():
         last_subj, last_obj = extract_last_subj_obj_with_clauses(doc)
 
         rule_func = rule_map.get(chord)
-
-        if rule_func:
-            request_count += 1
-
-            root = chord_list_roots[a]
-            rich_rich = None
-
-            if list_accidentals[a] == 22:
-                key = root + "b"
-                rich_rich = adv_dict.get(key)
-
-            if list_accidentals[a] == 11:
-                key = root + "#"
-                rich_rich = conj_dict.get(key)
-
-            if list_seventh[a] == 7:
-                if list_major_minor[a] == 2:
-                    rich_rich = adv_dict.get("m7")
-                else:
-                    rich_rich = conj_dict.get("maj 7")
-
-            if chord_list_roots[a] == "H":
-                if list_major_minor[a - 1] == 2:
-                    rich_rich = adv_dict.get("pause min")
-                else:
-                    rich_rich = conj_dict.get("pause maj")
-
-            # -------- FIRST 14 REQUESTS → GEMINI THROUGH HELICONE --------
-            if request_count <= 14:
-
-                def gemini_generate(prompt):
-                    return helicone_gemini_generate(
-                        "gemini-2.5-flash-lite",
-                        prompt,
-                        settings,
-                        GOOGLE_API_KEY,
-                        HELICONE_KEY
-                    )
-
-                if chord in ["F", "G", "H"]:
-                    result = rule_func(mode, last_obj, full_text, gemini_generate, None, rich_rich)
-                else:
-                    result = rule_func(last_subj, last_obj, full_text, gemini_generate, None, rich_rich)
-
-            # -------- AFTER 14 REQUESTS → LLAMA THROUGH HELICONE --------
-            else:
-
-                def llama_generate(prompt):
-                    response = client.chat.completions.create(
-                        model=GROQ_MODEL,
-                        messages=[
-                            {"role": "system", "content": "You are a creative poet and your style is concise. You strictly follow the rules described in the prompt."},
-                            {"role": "user", "content": prompt}
-                        ],
-                        temperature=settings["temperature"],
-                        top_p=settings["top_p"],
-                        max_tokens=settings["max_tokens"]
-                    )
-                    return response.choices[0].message.content.strip()
-
-                if chord in ["F", "G", "H"]:
-                    result = rule_func(mode, last_obj, full_text, None, llama_generate, rich_rich)
-                else:
-                    result = rule_func(last_subj, last_obj, full_text, None, llama_generate, rich_rich)
-
+        if not rule_func:
             a += 1
+            continue
 
+        request_count += 1
+
+        # --- Gemini през Helicone за първите 14 заявки ---
+        if request_count <= 14:
+            def gemini_generate(prompt):
+                return helicone_gemini_generate(
+                    "gemini-2.5-flash-lite",
+                    prompt,
+                    settings,
+                    GOOGLE_API_KEY,
+                    HELICONE_KEY
+                )
+
+            if chord in ["F", "G", "H"]:
+                result = rule_func(mode, last_obj, full_text, gemini_generate, None, None)
+            else:
+                result = rule_func(last_subj, last_obj, full_text, gemini_generate, None, None)
+
+        # --- LLaMA (Groq) през Helicone след 14 заявки ---
+        else:
+            def llama_generate(prompt):
+                response = client.chat.completions.create(
+                    model=GROQ_MODEL,
+                    messages=[
+                        {"role": "system", "content": "You are a creative poet and your style is concise. You strictly follow the rules described in the prompt."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=settings["temperature"],
+                    top_p=settings["top_p"],
+                    max_tokens=settings["max_tokens"],
+                    headers={
+                        "Helicone-Auth": f"Bearer {HELICONE_KEY}",
+                        "Helicone-Target-Url": "https://api.groq.com/openai/v1"
+                    }
+                )
+                return response.choices[0].message.content.strip()
+
+            if chord in ["F", "G", "H"]:
+                result = rule_func(mode, last_obj, full_text, None, llama_generate, None)
+            else:
+                result = rule_func(last_subj, last_obj, full_text, None, llama_generate, None)
+
+        a += 1
         clean_text = re.sub(r"\*\*(.*?)\*\*", r"\1", result)
         text_history.append((clean_text, chord))
 
     st.write("--- Final text history ---")
-    buf = []
-    for i, (sentence, chord) in enumerate(text_history, start=1):
-        buf.append(f"{i}. {sentence.strip()} [{chord}]")
+    buf = [f"{i}. {sentence.strip()} [{chord}]" for i, (sentence, chord) in enumerate(text_history, start=1)]
     st.text("\n".join(buf))
-
-
 
 
 if __name__ == "__main__":
