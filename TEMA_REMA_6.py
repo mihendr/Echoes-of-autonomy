@@ -4,8 +4,33 @@ import re
 import music21
 from typing import List, Tuple
 from openai import OpenAI
+import os
+import requests
+import json
 
 from music21 import stream, harmony, key, interval, note
+
+def create_helicone_client():
+    helicone_key = os.environ.get("HELICONE_API_KEY")
+
+    if not helicone_key or helicone_key.strip() == "":
+        st.error("HELICONE_API_KEY липсва в Streamlit Secrets.")
+        return None
+
+    try:
+        client = OpenAI(
+            api_key=helicone_key,
+            base_url="https://ai-gateway.helicone.ai",
+            default_headers={
+                "Helicone-Auth": f"Bearer {helicone_key}",
+                "Helicone-Tag": "streamlit_app"
+            }
+        )
+        return client
+
+    except Exception as e:
+        st.error(f"Helicone клиентът не може да се създаде: {e}")
+        return None
 
 # --- minimal Streamlit preparation ---
 try:
@@ -626,8 +651,7 @@ def user_prompt():
 # ===  MAIN ======
 # =========================
 
-import requests
-import json
+
 
 def helicone_gemini_generate(model_name, prompt, settings, GOOGLE_API_KEY, HELICONE_KEY):
     url = "https://ai-gateway.helicone.ai/"
@@ -671,6 +695,9 @@ def main():
 
     init_phrase, chord_list_roots, list_major_minor, list_seventh, list_accidentals, tonic, mode = user_prompt()
     rules = []
+    client = create_helicone_client()
+    if client is None:
+        st.stop()
 
     for chord in chord_list_roots:
         if mode == "major":
