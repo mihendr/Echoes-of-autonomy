@@ -646,13 +646,13 @@ def main():
 
     init_phrase, chord_list_roots, list_major_minor, list_seventh, list_accidentals, tonic, mode = user_prompt()
     rules = []
-    
+
     for chord in chord_list_roots:
         if mode == "major":
             rules.append(MAP_C_MAJOR[chord])
         if mode == "minor":
             rules.append(MAP_A_MINOR[chord])
-    
+
     text_history = [(init_phrase, "INIT")]
 
     settings = {
@@ -661,6 +661,7 @@ def main():
         "max_tokens": 50
     }
 
+    # --- GOOGLE API ---
     GOOGLE_API_KEY = None
     if "GOOGLE_API_KEY" in st.secrets:
         GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
@@ -669,7 +670,20 @@ def main():
 
     if not GOOGLE_API_KEY:
         st.error("Google API key not found. Please set it in Streamlit secrets.")
+    else:
+        genai.configure(api_key=GOOGLE_API_KEY)
 
+    # --- Gemini като истинска инстанция ---
+    model_gemini = genai.GenerativeModel(
+        model_name="gemini-2.5-flash-lite",
+        generation_config={
+            "temperature": settings["temperature"],
+            "top_p": settings["top_p"],
+            "max_output_tokens": settings["max_tokens"]
+        }
+    )
+
+    # --- GROQ / LLaMA през Helicone ---
     HELICONE_KEY = st.secrets.get("HELICONE_API_KEY")
     if not HELICONE_KEY:
         st.error("Missing HELICONE_API_KEY")
@@ -702,7 +716,7 @@ def main():
         conj_dict = CONJUNCTION_GUIDELINES_FOR_MAJOR
     else:
         adv_dict = ADVERB_GUIDELINES_FOR_MINOR
-        conj_dict = CONJUNCTION_GUIDELINES_FOR_MINOR 
+        conj_dict = CONJUNCTION_GUIDELINES_FOR_MINOR
 
     request_count = 0
     a = 0
@@ -734,36 +748,14 @@ def main():
                 else:
                     rich_rich = conj_dict.get("pause maj")
 
-            # --- Helicone Gemini за първи 14 заявки ---
+            # --- Gemini през оригиналния model_gemini ---
             if request_count <= 14:
-                def gemini_generate(prompt):
-                    url = "https://ai-gateway.helicone.ai/v1"
-                    target_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={GOOGLE_API_KEY}"
-                    payload = {
-                        "contents": [{"parts": [{"text": prompt}]}],
-                        "generationConfig": {
-                            "temperature": settings["temperature"],
-                            "topP": settings["top_p"],
-                            "maxOutputTokens": settings["max_tokens"]
-                        }
-                    }
-                    headers = {
-                        "Content-Type": "application/json",
-                        "Helicone-Auth": f"Bearer {HELICONE_KEY}",
-                        "Helicone-Target-Url": target_url
-                    }
-                    response = requests.post(url, headers=headers, data=json.dumps(payload))
-                    data = response.json()
-                    try:
-                        return data["candidates"][0]["content"]["parts"][0]["text"]
-                    except Exception:
-                        return ""
-
                 if chord in ["F", "G", "H"]:
-                    result = rule_func(mode, last_obj, full_text, gemini_generate, None, rich_rich)
+                    result = rule_func(mode, last_obj, full_text, model_gemini, None, rich_rich)
                 else:
-                    result = rule_func(last_subj, last_obj, full_text, gemini_generate, None, rich_rich)
+                    result = rule_func(last_subj, last_obj, full_text, model_gemini, None, rich_rich)
             else:
+                # --- LLaMA през Helicone ---
                 def llama_generate(prompt):
                     response = client.chat.completions.create(
                         model=GROQ_MODEL,
@@ -792,6 +784,7 @@ def main():
     for a, (sentence, chord) in enumerate(text_history, start=1):
         buf.append(f"{a}. {sentence.strip()} [{chord}]")
     st.text("\n".join(buf))
+
 
 
 if __name__ == "__main__":
