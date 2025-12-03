@@ -647,7 +647,6 @@ def main():
     init_phrase, chord_list_roots, list_major_minor, list_seventh, list_accidentals, tonic, mode = user_prompt()
     rules = []
     
-    
     for chord in chord_list_roots:
         if mode == "major":
             rules.append(MAP_C_MAJOR[chord])
@@ -675,19 +674,6 @@ def main():
     if not HELICONE_KEY:
         st.error("Missing HELICONE_API_KEY")
 
-    # --- Helicone клиент за LLaMA/Groq ---
-    client = OpenAI(api_key=HELICONE_KEY, base_url="https://ai-gateway.helicone.ai/v1")
-    GROQ_MODEL = "llama-3.1-8b-instant"
-
-    model_gemini = {
-        "model_name": "gemini-2.5-flash-lite",
-        "generation_config": {
-            "temperature": settings["temperature"],
-            "top_p": settings["top_p"],
-            "max_output_tokens": settings["max_tokens"]
-        }
-    }
-
     GROQ_KEY = None
     if "GROQ_API_KEY" in st.secrets:
         GROQ_KEY = st.secrets["GROQ_API_KEY"]
@@ -696,6 +682,9 @@ def main():
 
     if not GROQ_KEY:
         st.error("No GROQ API key found. Please set it in Streamlit secrets.")
+
+    client = OpenAI(api_key=HELICONE_KEY, base_url="https://ai-gateway.helicone.ai/v1")
+    GROQ_MODEL = "llama-3.1-8b-instant"
 
     rule_map = {
         "A": generate_sentence_rule_A,
@@ -745,7 +734,7 @@ def main():
                 else:
                     rich_rich = conj_dict.get("pause maj")
 
-            # --- Gemini през Helicone за първи 14 заявки ---
+            # --- Helicone Gemini за първи 14 заявки ---
             if request_count <= 14:
                 def gemini_generate(prompt):
                     url = "https://ai-gateway.helicone.ai/v1"
