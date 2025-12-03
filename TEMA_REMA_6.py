@@ -626,181 +626,123 @@ def user_prompt():
 # ===  MAIN ======
 # =========================
 
-
-
 def main():
     MAP_C_MAJOR = {'C': 'A', 'D': 'E', 'E': 'F', 'F': 'B', 'G': 'C', 'A': 'D', 'B': 'G',"P": "H"}
     MAP_A_MINOR = {'A': 'A', 'B': 'E', 'C': 'F', 'D': 'B', 'E': 'C', 'F': 'D', 'G': 'G',"P": "H"}
-
+    
     init_phrase, chord_list_roots, list_major_minor, list_seventh, list_accidentals, tonic, mode = user_prompt()
+    
     rules = []
-    
-    
     for chord in chord_list_roots:
-        # We retrieve the coded symbol for each chord
         if mode == "major":
             rules.append(MAP_C_MAJOR[chord])
-            #print(mode)
         if mode == "minor":
             rules.append(MAP_A_MINOR[chord])
-            #print(mode)
-    
+   
     text_history = [(init_phrase, "INIT")]
-
-    # --- SETTINGS (без repetition_penalty) ---
     settings = {
         "temperature": 1.7,
         "top_p": 0.9,
         "max_tokens": 50
     }
 
-    # --- Gemini модел с правилна конфигурация ---
-    GOOGLE_API_KEY = None
+    # ================== HELICONE + GEMINI (само тези 15 реда са нови) ==================
+    from openai import OpenAI
 
-    # Опитай различни layouts в secrets
-    if "GOOGLE_API_KEY" in st.secrets:
-        GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-    elif "google" in st.secrets and isinstance(st.secrets["google"], dict) and "api_key" in st.secrets["google"]:
-        GOOGLE_API_KEY = st.secrets["google"]["api_key"]
+    # ← ТУК слагаш твоя ключ от https://helicone.ai → API Keys
+    HELICONE_KEY = "sk-helicone-b75x7ya-763ebmi-ugfefzy-tbw42cy"   
 
-    if not GOOGLE_API_KEY:
-        st.error("Google API key not found. Please set it in Streamlit secrets.")
-    else:
-        genai.configure(api_key=GOOGLE_API_KEY)
-
-    try:
-        if GOOGLE_API_KEY:
-            genai.configure(api_key=GOOGLE_API_KEY)
-    except Exception:
-        # keep original behavior if configure fails
-        pass
-
-    model_gemini = genai.GenerativeModel(
-        model_name="gemini-2.5-flash-lite",
-        generation_config={
-            "temperature": settings["temperature"],
-            "top_p": settings["top_p"],
-            "max_output_tokens": settings["max_tokens"]
-        }
+    client_helicone = OpenAI(
+        api_key=HELICONE_KEY,
+        base_url="https://ai-gateway.helicone.ai/v1"
     )
-    
-    
-    
 
-    GROQ_KEY = None
+    def call_gemini(prompt):
+        response = client_helicone.chat.completions.create(
+            model="gemini-2.5-flash-lite",           
+            messages=[{"role": "user", "content": prompt}],
+            temperature=settings["temperature"],
+            top_p=settings["top_p"],
+            max_output_tokens=settings["max_tokens"]
+        )
+        return response.choices[0].message.content.strip()
+    # ================================================================================
 
-    if "GROQ_API_KEY" in st.secrets:
-        GROQ_KEY = st.secrets["GROQ_API_KEY"]
-    elif "groq" in st.secrets and isinstance(st.secrets["groq"], dict) and "api_key" in st.secrets["groq"]:
-        GROQ_KEY = st.secrets["groq"]["api_key"]
-
+    # Groq си остава същия
+    GROQ_KEY = st.secrets.get("GROQ_API_KEY") or st.secrets.get("groq", {}).get("api_key")
     if not GROQ_KEY:
-        st.error("No GROQ API key found. Please set it in Streamlit secrets.")
-
-    client = OpenAI(api_key=GROQ_KEY, base_url="https://api.groq.com/openai/v1")
+        st.error("No GROQ API key found.")
+        return
+    client_groq = OpenAI(api_key=GROQ_KEY, base_url="https://api.groq.com/openai/v1")
     GROQ_MODEL = "llama-3.1-8b-instant"
 
+    def llama_generate(prompt):
+        response = client_groq.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a creative poet and your style is concise. You strictly follow the rules described in the prompt."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=settings["temperature"],
+            top_p=settings["top_p"],
+            max_tokens=settings["max_tokens"]
+        )
+        return response.choices[0].message.content.strip()
+
     rule_map = {
-        "A": generate_sentence_rule_A,
-        "B": generate_sentence_rule_B,
-        "C": generate_sentence_rule_C,
-        "D": generate_sentence_rule_D,
-        "E": generate_sentence_rule_E,
-        "F": generate_sentence_rule_F,
-        "G": generate_sentence_rule_G,
-        "H": generate_sentence_rule_H,
-        
+        "A": generate_sentence_rule_A, "B": generate_sentence_rule_B,
+        "C": generate_sentence_rule_C, "D": generate_sentence_rule_D,
+        "E": generate_sentence_rule_E, "F": generate_sentence_rule_F,
+        "G": generate_sentence_rule_G, "H": generate_sentence_rule_H,
     }
-    
+   
     if mode == 'major':
         adv_dict = ADVERB_GUIDELINES_FOR_MAJOR
         conj_dict = CONJUNCTION_GUIDELINES_FOR_MAJOR
     else:
         adv_dict = ADVERB_GUIDELINES_FOR_MINOR
-        conj_dict = CONJUNCTION_GUIDELINES_FOR_MINOR 
-    
+        conj_dict = CONJUNCTION_GUIDELINES_FOR_MINOR
+   
     request_count = 0
-
-    a =0
+    a = 0
     for chord in rules:
         full_text = " ".join([t[0] for t in text_history])
         doc = nlp(full_text)
         last_subj, last_obj = extract_last_subj_obj_with_clauses(doc)
-
-        #print(f"\nLast subject: {last_subj}")
-        #print(f"Last object: {last_obj}")
-
         rule_func = rule_map.get(chord)
-        
-          
+         
         if rule_func:
             request_count += 1
-            
-            
-            root = chord_list_roots[a] 
+           
+            root = chord_list_roots[a]
             rich_rich = None
             if list_accidentals[a] == 22:
-                key = root + "b"   # напр. "C" + "b" → "Cb"
-                rich_rich= adv_dict.get(key)
-            
+                rich_rich = adv_dict.get(root + "b")
             if list_accidentals[a] == 11:
-                key = root + "#"
-                rich_rich = conj_dict.get(key)
-            
+                rich_rich = conj_dict.get(root + "#")
             if list_seventh[a] == 7:
-                if list_major_minor[a] == 2: 
-                    rich_rich = adv_dict.get("m7")
-                else:
-                    rich_rich = conj_dict.get("maj 7")
-                
+                rich_rich = adv_dict.get("m7") if list_major_minor[a] == 2 else conj_dict.get("maj 7")
             if chord_list_roots[a] == "H":
-                if list_major_minor[a-1] == 2:
-                    rich_rich = adv_dict.get("pause min")
-                else:
-                    rich_rich = conj_dict.get("pause maj")
-                
-            # rich_rich = None   
-            #print(a+1,".....",">>>    ", rich_rich, "<<<<<<")    
-            if request_count <= 14:    
-                if chord == "F" or chord == "G" or chord == "H":
-                    result = rule_func(mode, last_obj, full_text, model_gemini, None, rich_rich)
-                else:    
-                    result = rule_func(last_subj, last_obj, full_text, model_gemini, None, rich_rich)
-            else:
-                def llama_generate(prompt):
-                    response = client.chat.completions.create(
-                    model=GROQ_MODEL,
-                        messages=[
-                            {
-                                "role": "system",
-                               "content": "You are a creative poet and your style is concise. You strictly follow the rules described in the prompt."
-                           },
-                           {
-                                "role": "user",
-                                "content": prompt
-                            }
-                        ],
-                        temperature=settings["temperature"],
-                        top_p=settings["top_p"],
-                        max_tokens=settings["max_tokens"]
-                    )
-                    return response.choices[0].message.content.strip()
+                rich_rich = adv_dict.get("pause min") if list_major_minor[a-1] == 2 else conj_dict.get("pause maj")
 
-                if chord == "F" or chord == "G" or chord == "H":
+            # ← ТУК е единствената промяна в логиката: call_gemini вместо model_gemini
+            if request_count <= 14:
+                if chord in ["F", "G", "H"]:
+                    result = rule_func(mode, last_obj, full_text, call_gemini, None, rich_rich)
+                else:
+                    result = rule_func(last_subj, last_obj, full_text, call_gemini, None, rich_rich)
+            else:
+                if chord in ["F", "G", "H"]:
                     result = rule_func(mode, last_obj, full_text, None, llama_generate, rich_rich)
-                else:    
+                else:
                     result = rule_func(last_subj, last_obj, full_text, None, llama_generate, rich_rich)
-            a +=1
+            a += 1
+
         clean_text = re.sub(r"\*\*(.*?)\*\*", r"\1", result)
         text_history.append((clean_text, chord))
-
-    
-
-    a = 0    
+   
     st.write("--- Final text history ---")
-    buf = []
-    for a, (sentence, chord) in enumerate(text_history, start=1):
-        buf.append(f"{a}. {sentence.strip()} [{chord}]")
+    buf = [f"{i}. {sentence.strip()} [{chord}]" for i, (sentence, chord) in enumerate(text_history, 1)]
     st.text("\n".join(buf))
 
 
