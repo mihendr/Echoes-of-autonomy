@@ -645,7 +645,7 @@ def create_helicone_client(helicone_key: str):
     try:
         client = OpenAI(
             api_key=helicone_key,
-            api_base="https://ai-gateway.helicone.ai"
+            base_url="https://ai-gateway.helicone.ai/v1"
         )
         return client
     except Exception as e:
@@ -653,7 +653,7 @@ def create_helicone_client(helicone_key: str):
         return None
 
 def helicone_gemini_generate(model_name, prompt, settings, GOOGLE_API_KEY, HELICONE_KEY):
-    url = "https://ai-gateway.helicone.ai/"
+    url = "https://ai-gateway.helicone.ai/v1"
 
     target_url = (
         f"https://generativelanguage.googleapis.com/v1beta/models/"
@@ -759,11 +759,7 @@ def main():
                     ],
                     temperature=settings["temperature"],
                     top_p=settings["top_p"],
-                    max_tokens=settings["max_tokens"],
-                    headers={
-                        "Helicone-Auth": f"Bearer {HELICONE_KEY}",
-                        "Helicone-Target-Url": "https://api.groq.com/openai/v1"
-                    }
+                    max_tokens=settings["max_tokens"]
                 )
                 return response.choices[0].message.content.strip()
 
@@ -779,7 +775,6 @@ def main():
     st.write("--- Final text history ---")
     buf = [f"{i}. {sentence.strip()} [{chord}]" for i, (sentence, chord) in enumerate(text_history, start=1)]
     st.text("\n".join(buf))
-
 
 if __name__ == "__main__":
     main()
