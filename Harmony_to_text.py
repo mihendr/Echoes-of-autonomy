@@ -648,13 +648,7 @@ def main():
     rules = []
 
 
-    st.title("Hello world")
-    st.write("""
-    **Peace and Love**  
-    Expect the app RHYTHM TO TEXT GENERATOR in January.  
-    The app HARMONY TO TEXT GENERATOR is being improved in parallel.
-    """)
-    return 0
+    
     for chord in chord_list_roots:
         # We retrieve the coded symbol for each chord
         if mode == "major":
