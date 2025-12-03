@@ -646,7 +646,14 @@ def main():
 
     init_phrase, chord_list_roots, list_major_minor, list_seventh, list_accidentals, tonic, mode = user_prompt()
     rules = []
-    
+
+
+    st.title("Hello world")
+    st.write("""
+    **Peace and Love**  
+    Expect the app RHYTHM TO TEXT GENERATOR in January.  
+    The app HARMONY TO TEXT GENERATOR is being improved in parallel.
+    """)
     
     for chord in chord_list_roots:
         # We retrieve the coded symbol for each chord
